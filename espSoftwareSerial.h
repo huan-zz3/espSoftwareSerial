@@ -6,7 +6,7 @@
 namespace eSSC{
 	typedef unsigned int CountType;
 	typedef uint8_t pinType;
-	#define Baud 1000
+	#define Baud 10000
 	const uint32_t BaudMicroSecend = 1000000/Baud;
 }
 namespace eSSVar{
@@ -20,12 +20,11 @@ namespace eSSNamespace{
 	using namespace eSSVar;
 	
 	void sendDataTask1(void *);
-	void delayMicroseconds(uint32_t);
 	
 	class eSSModel{
 		public:
 			pinType TXD, RXD;
-			String sendStr;
+			String sendStr, receiveStr;
 			void uartInit(pinType RXDt, pinType TXDt){
 				TXD = TXDt;
 				RXD = RXDt;
@@ -45,9 +44,7 @@ namespace eSSNamespace{
 						break;
 				}
 			}
-			void receiveData(){
-				
-			}
+			
 		private:
 			TaskHandle_t xHandle;
 			
@@ -61,34 +58,38 @@ namespace eSSNamespace{
 		Serial.println(data);
 		for(int j = 0; j<length - 1; j++){
 			digitalWrite(eSS1.TXD, LOW);    // 发送起始位（低电平）
-			delayMicroseconds(BaudMicroSecend);  // 延迟一个位的时间
-			/*Serial.print("j:");
-			Serial.println(j);*/
+			ets_delay_us(BaudMicroSecend);  // 延迟一个位的时间
 			// 发送每个比特位
 			for (int i = 0; i < 8; i++) {
 				digitalWrite(eSS1.TXD, data[j] & 1);  // 发送当前位
-				delayMicroseconds(BaudMicroSecend);     // 延迟一个位的时间
+				ets_delay_us(BaudMicroSecend);     // 延迟一个位的时间
 				data[j] >>= 1;                   // 移位获取下一位
-				/*Serial.print("i:");
-				Serial.println(i);*/
 			}
 			digitalWrite(eSS1.TXD, HIGH);   // 发送停止位（高电平）
-			delayMicroseconds(BaudMicroSecend);  // 延迟一个位的时间
+			ets_delay_us(BaudMicroSecend);  // 延迟一个位的时间
 		}
 		
 		Serial.println("sendDataTask1 OK!");
 		vTaskDelete(NULL);
 	}
-	
-	void delayMicroseconds(uint32_t us) {
-		const TickType_t xDelay = pdMS_TO_TICKS(us / 1000);
-		TickType_t xLastWakeTime = xTaskGetTickCount();
-		vTaskDelayUntil(&xLastWakeTime, xDelay);
-		
-		/*TickType_t startTime = xTaskGetTickCount();
-		const TickType_t delayTicks = pdMicrosecondsToTicks(us);
-		vTaskDelayUntil(&startTime, delayTicks);*/
+	void receiveData(void *arg){
+		String strTemp;
+		while(1){
+			if (digitalRead(rxPin) == LOW) {
+				static i = 0;
+				ets_delay_us(deMic);  // 延迟一个位的时间
+				char data = 0;
+				
+				// 接收每个比特位
+				for (int i = 0; i < 8; i++) {
+					data |= digitalRead(pin) << i;  // 读取当前位并设置到相应的位置
+					ets_delay_us(deMic);       // 延迟一个位的时间
+				}
+				i+=2;
+			}
+		}
 	}
+	
 }
 
 namespace eSSEnv{
